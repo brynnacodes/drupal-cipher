@@ -46,9 +46,29 @@ function cipher_form() {
 }
 
 function cipher_form_submit($form, &$form_state) {
+  $shift_value = (int)$form_state['values']['shift_value'];
+
+  $shift_direction = $form_state['values']['shift_direction'];
+  $phrase = $form_state['values']['phrase'];
+
+  $alphabet = array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
+
+  $alpha_value = array_flip($alphabet);
+
+  $split_phrase = str_split($phrase);
+  $count_phrase = count($split_phrase);
+  $encripted_phrase = '';
+
+  for($i = 0; $i < $count_phrase; $i++) {
+    $encripted_phrase .= $alphabet[($alpha_value[$split_phrase[$i]]+$shift_value)%26];
+  };
+
+  $_SESSION['encripted'] = $encripted_phrase;
   $form_state['redirect'] = 'cipher_success_page';
 }
 
 function cipher_success() {
-    return 'You encoded a phrase!';
+
+    $answer = $_SESSION['encripted'];
+    return 'Your encoded phrase is: ' . $answer. '!';
 }
