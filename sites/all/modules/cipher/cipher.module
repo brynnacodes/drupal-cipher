@@ -51,10 +51,10 @@ function cipher_form() {
 }
 
 function element_validate_direction($element) {
-  $direction = $element['#value'];
-  if (($direction != "right") || ($direction != "left")) {
+  $direction = strtolower($element['#value']);
+  if (!($direction == 'right' || $direction == 'left')) {
     form_error($element, t('Please enter either left or right'));
-  };
+  }
 }
 
 function cipher_form_submit($form, &$form_state) {
