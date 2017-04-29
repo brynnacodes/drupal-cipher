@@ -1,6 +1,6 @@
-# BookClub
+# Cipher
 
-A website and roster for the Hogwarts Book Club to keep track of member info, favorite books, and total books read. Mischief managed!
+A Drupal website showcasing a custom module to encrypt inputted text using the shift/Caesar cipher! 
 
 ## Prerequisites
 
