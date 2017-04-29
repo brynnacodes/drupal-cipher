@@ -19,77 +19,106 @@ function cipher_menu() {
 }
 
 function cipher_form() {
-  $form['shift_value'] = array(
-    '#title' => 'Shift value',
-    '#type' => 'textfield',
-    '#description' => t('Please enter a numeric shift value'),
-    '#element_validate' => array('element_validate_integer_positive'),
-    '#required' => TRUE,
-  );
+    $form['shift_value'] = array(
+        '#title' => 'Shift value',
+        '#type' => 'textfield',
+        '#description' => t('Please enter a numeric shift value'),
+        '#element_validate' => array('element_validate_integer_positive', 'element_validate_range'),
+        '#required' => TRUE,
+    );
 
-  $form['shift_direction'] = array(
-    '#title' => 'Shift direction',
-    '#type' => 'textfield',
-    '#description' => t('Please enter left or right'),
-    '#element_validate' => array('element_validate_direction'),
-    '#required' => TRUE,
-  );
+    $form['shift_direction'] = array(
+        '#title' => 'Shift direction',
+        '#type' => 'textfield',
+        '#description' => t('Please enter left or right'),
+        '#element_validate' => array('element_validate_direction'),
+        '#required' => TRUE,
+    );
 
-  $form['phrase'] = array(
-    '#title' => 'Phrase',
-    '#type' => 'textfield',
-    '#description' => t('Please enter a phrase to encode'),
-    '#required' => TRUE,
-  );
+    $form['phrase'] = array(
+        '#title' => 'Phrase',
+        '#type' => 'textfield',
+        '#description' => t('Please enter a phrase to encode'),
+        '#element_validate' => array('element_validate_phrase'),
+        '#required' => TRUE,
+    );
 
-  $form['submit'] = array(
-    '#type' => 'submit',
-    '#value' => 'Encode Phrase',
-  );
+    $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => 'Encode Phrase',
+    );
 
-  return $form;
+    return $form;
 }
 
 function element_validate_direction($element) {
-  $direction = strtolower($element['#value']);
-  if (!($direction == 'right' || $direction == 'left')) {
-    form_error($element, t('Please enter either left or right'));
-  }
+    $direction = strtolower($element['#value']);
+    if (!($direction == 'right' || $direction == 'left')) {
+        form_error($element, t('Please enter either left or right.'));
+    }
+}
+
+function element_validate_range($element) {
+    $shift_value = $element['#value'];
+    if ($shift_value < 0 || $shift_value > 25) {
+        form_error($element, t('Please enter a value between 1 and 25.'));
+    }
+}
+
+function element_validate_phrase($element) {
+    $phrase = strtolower($element['#value']);
+    if (preg_match('/[\/~`\@#\$%\^&\*\(\)_\-\+=\{\}\[\]\|\<\>\\\]/',$phrase)) {
+        form_error($element, t('Please enter a phrase without any special characters(only letters and punctuation).'));
+    }
 }
 
 function cipher_form_submit($form, &$form_state) {
-  $direction = $form_state['values']['shift_direction'];
-  $shift_value = (int)$form_state['values']['shift_value'];
+    $direction = $form_state['values']['shift_direction'];
+    $shift_value = (int)$form_state['values']['shift_value'];
 
-  $shift_direction = $form_state['values']['shift_direction'];
-  $phrase = $form_state['values']['phrase'];
+    $shift_direction = $form_state['values']['shift_direction'];
+    $phrase = $form_state['values']['phrase'];
 
-  $alphabet = array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
+    $alphabet = array('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z');
 
-//array_flip flips the key value pair allowing access to numeric indices
-  $alpha_value = array_flip($alphabet);
+    //array_flip flips the key value pair allowing access to numeric indices
+    $alpha_value = array_flip($alphabet);
 
-  $split_phrase = str_split($phrase);
-  $count_phrase = count($split_phrase);
-  $encripted_phrase = '';
+    $split_phrase = str_split($phrase);
+    $count_phrase = count($split_phrase);
+    $encrypted_phrase = '';
 
-//for loop concatenates the encrypted letter to $encrypted_phrase as it loops through each letter
-if ($direction === 'right') {
-  for($i = 0; $i < $count_phrase; $i++) {
-    $encripted_phrase .= $alphabet[($alpha_value[$split_phrase[$i]]+$shift_value)%26];
-  }
-} else if ($direction === 'left') {
-  for($i = 0; $i < $count_phrase; $i++) {
-    $encripted_phrase .= $alphabet[($alpha_value[$split_phrase[$i]]-$shift_value)%26];
-  }
-}
+    //for loop concatenates the encrypted letter to $encrypted_phrase as it loops through each letter
+    if ($direction === 'right') {
+        for($i = 0; $i < $count_phrase; $i++) {
+            if (preg_match('/[a-zA-Z]/', $split_phrase[$i])) {
+                $encrypted_phrase .= $alphabet[($alpha_value[$split_phrase[$i]]+$shift_value)%26];
+            } elseif (preg_match('/[\s\.\,\?\!]/', $split_phrase[$i])) {
+                $encrypted_phrase .= $split_phrase[$i];
+            }
+        }
+    } else if ($direction === 'left') {
+        for($i = 0; $i < $count_phrase; $i++) {
+            $amount = ($alpha_value[$split_phrase[$i]]-$shift_value);
+            if (preg_match('/[a-z]/', $split_phrase[$i])) {
+                if ($amount < 0) {
+                    $amount += 26;
+                    $encrypted_phrase .= ($alphabet[$amount]);
+                } else {
+                    $encrypted_phrase .= $alphabet[($alpha_value[$split_phrase[$i]]-$shift_value)];
+                }
+            } elseif (preg_match('/[\s\.\,\?\!]/', $split_phrase[$i])) {
+                $encrypted_phrase .= $split_phrase[$i];
+            }
+        }
+    }
 
-  $_SESSION['encripted'] = $encripted_phrase;
-  $form_state['redirect'] = 'cipher_success_page';
+    $_SESSION['encrypted'] = $encrypted_phrase;
+    $form_state['redirect'] = 'cipher_success_page';
 }
 
 function cipher_success() {
 
-    $answer = $_SESSION['encripted'];
-    return 'Your encoded phrase is: ' . $answer. '!';
+    $answer = $_SESSION['encrypted'];
+    return 'Your encrypted phrase is: ' . $answer;
 }
